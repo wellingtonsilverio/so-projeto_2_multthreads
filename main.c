@@ -67,6 +67,10 @@ int main(int argc, char *argv[]) {
             }
         }
     }
+
+    
+
+
     exit(1);
 
     thread_id = malloc(n_threads * sizeof(pthread_t));
