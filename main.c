@@ -49,52 +49,5 @@ int main() {
 
     free(thread_id);
 
-    // thread_status = pthread_create(&thread_id_2, NULL, read_file, (void*)(&n_loop));
-
-    // if (thread_status != 0) {
-    //     printf("Error create!\n");
-    //     exit(thread_status);
-    // }
-
-    // thread_status = pthread_create(&thread_id_3, NULL, read_file, (void*)(&n_loop));
-
-    // if (thread_status != 0) {
-    //     printf("Error create!\n");
-    //     exit(thread_status);
-    // }
-
-    // thread_status = pthread_join(thread_id_1, &thread_response);
-
-    // if (thread_status != 0) {
-    //     printf("Error join!\n");
-    //     exit(thread_status);
-    // }
-
-    // response = (char *)thread_response;
-
-    // printf("1) %s\n", response);
-
-    // thread_status = pthread_join(thread_id_2, &thread_response);
-
-    // if (thread_status != 0) {
-    //     printf("Error join!\n");
-    //     exit(thread_status);
-    // }
-
-    // response = (char *)thread_response;
-
-    // printf("2) %s\n", response);
-
-    // thread_status = pthread_join(thread_id_3, &thread_response);
-
-    // if (thread_status != 0) {
-    //     printf("Error join!\n");
-    //     exit(thread_status);
-    // }
-
-    // response = (char *)thread_response;
-
-    // printf("3) %s\n", response);
-
     return 0;
 }
