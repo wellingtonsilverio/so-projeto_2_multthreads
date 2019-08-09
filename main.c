@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <pthread.h>
+#include <string.h>
 
 void* read_file(void *arg) {
     int i;
@@ -25,23 +26,48 @@ int main(int argc, char *argv[]) {
     void* thread_response;
     int thread_status;
     char* response;
+    char line[1000];
     int i;
+    int j;
     int n_threads = 16;
     char* in_path[1000] = {"arq1.dat", "arq2.dat", "arq3.dat"};
     char* out_path = "saida.dat";
+    int number_files = 0;
+    int numbers[1000][1000];
 
     int n_loop = 100000;
+
+    FILE* file;
 
     if (argc >= 1) n_threads = atoi(argv[1]);
 
     for (i = 2; i < argc; ++i) {
-        if (argv[i] == "-o") {
+        if (strcmp(argv[i],"-o") == 0) {
             out_path = argv[i+1];
             break;
+        } else {
+            in_path[i - 2] = argv[i]; // Tem que arrumar isso aqui, esta fixado em 1000 arquivos
+            number_files++;
         }
-
-        in_path[i - 2] = argv[i]; // Tem que arrumar isso aqui
     }
+
+    if (number_files > 0) {
+        for (i = 0; i < number_files; i++) {
+            file = fopen(in_path[i], "rt");
+
+            if (file == NULL) {
+                printf("Problemas na leitura do arquivo\n");
+                exit(1);
+            }
+
+            for (j = 0; !feof(file); j++) {
+                if (fgets(line, 1000, file)) {
+                    numbers[i][j] = atoi(line);
+                }
+            }
+        }
+    }
+    exit(1);
 
     thread_id = malloc(n_threads * sizeof(pthread_t));
 
