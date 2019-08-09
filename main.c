@@ -29,6 +29,7 @@ int main(int argc, char *argv[]) {
     char line[1000];
     int i;
     int j;
+    int max_n_in_line = 0;
     int n_threads = 16;
     char* in_path[1000] = {"arq1.dat", "arq2.dat", "arq3.dat"};
     char* out_path = "saida.dat";
@@ -60,15 +61,22 @@ int main(int argc, char *argv[]) {
                 exit(1);
             }
 
-            for (j = 0; !feof(file); j++) {
+            j = 0;
+            while (!feof(file)) {
                 if (fgets(line, 1000, file)) {
                     numbers[i][j] = atoi(line);
                 }
+
+                j++;
+            }
+
+            if (max_n_in_line < j) {
+                max_n_in_line = j;
             }
         }
     }
 
-    
+    printf("%d\n", max_n_in_line);
 
 
     exit(1);
