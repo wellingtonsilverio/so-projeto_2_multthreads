@@ -35,6 +35,7 @@ int main(int argc, char *argv[]) {
     char* out_path = "saida.dat";
     int number_files = 0;
     int numbers[1000][1000];
+    int matrix_result[1000][1000];
 
     int n_loop = 100000;
 
@@ -76,7 +77,11 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    printf("%d\n", max_n_in_line);
+    for (i = 0; i < number_files; i++) {
+        for(j = 0; j < max_n_in_line; j++) {
+            matrix_result[i][j] = numbers[i][j];
+        }
+    }
 
 
     exit(1);
