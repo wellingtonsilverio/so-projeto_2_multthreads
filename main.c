@@ -21,6 +21,20 @@ void thereAnError(int status, char* message) {
     }
 }
 
+void selection_sort(int* vetor, int size) {  
+  int i, j, min, swap;
+
+  for (j = 0; j < size - 1; j++) { 
+    for (i = 1; i < size; i++) { 
+        if (vetor[i - 1] > vetor[i]) {
+            swap = vetor[i];
+            vetor[i] = vetor[i - 1];
+            vetor[i - 1] = swap;
+        }
+    }
+  }
+}
+
 int main(int argc, char *argv[]) {
     pthread_t* thread_id;
     void* thread_response;
@@ -74,14 +88,54 @@ int main(int argc, char *argv[]) {
             if (max_n_in_line < j) {
                 max_n_in_line = j;
             }
+
+            fclose(file);
         }
     }
 
     for (i = 0; i < number_files; i++) {
         for(j = 0; j < max_n_in_line; j++) {
-            matrix_result[i][j] = numbers[i][j];
+            matrix_result[i][j] = 0;
         }
     }
+
+    // Ordena numbers
+    for (i = 0; i < number_files; i++) {
+        selection_sort(numbers[i], (sizeof(numbers[i])/sizeof(int)));
+    }
+
+    if (number_files > 0) {
+        for (i = 0; i < number_files; i++) {
+            file = fopen(in_path[i], "rt");
+
+            if (file == NULL) {
+                printf("Problemas na leitura do arquivo\n");
+                exit(1);
+            }
+
+            j = 0;
+            while (!feof(file)) {
+                if (fgets(line, 1000, file)) {
+                    matrix_result[i][j] = numbers[i][j];
+                }
+
+                j++;
+            }
+
+            fclose(file);
+        }
+    }
+
+    char buffer [50];
+    file = fopen(out_path, "w+");
+    for (i = 0; i < number_files; i++) {
+        for(j = 0; j < max_n_in_line; j++) {
+            sprintf (buffer, "%d ", matrix_result[i][j]);
+            fputs(buffer, file);
+        }
+        fputs("\n", file);
+    }
+    fclose(file);
 
 
     exit(1);
