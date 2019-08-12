@@ -22,15 +22,22 @@ void thereAnError(int status, char* message) {
 }
 
 void selection_sort(int* vetor, int size) {  
-  int i, j, min, swap;
+  int i, hasBeenOrganized, min, swap;
 
-  for (j = 0; j < size - 1; j++) { 
+  while(1) {
+    hasBeenOrganized = 1;
     for (i = 1; i < size; i++) { 
         if (vetor[i - 1] > vetor[i]) {
             swap = vetor[i];
             vetor[i] = vetor[i - 1];
             vetor[i - 1] = swap;
+
+            hasBeenOrganized = 0;
         }
+    }
+
+    if (hasBeenOrganized == 1) {
+        break;
     }
   }
 }
