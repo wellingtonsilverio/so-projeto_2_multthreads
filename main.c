@@ -3,25 +3,18 @@
 #include <pthread.h>
 #include <string.h>
 
-void* read_file(void *arg) {
-    int i;
-    int* loop_count = (int*)arg;
+// void* read_file(void *arg) {
+//     int i;
+//     int* loop_count = (int*)arg;
 
-    for (i = 0; i <= *loop_count; i++) {
-        printf("%d\n", i);
-    }
+//     for (i = 0; i <= *loop_count; i++) {
+//         printf("%d\n", i);
+//     }
 
-    pthread_exit("Loop finalizado!");
-}
+//     pthread_exit("Loop finalizado!");
+// }
 
-void thereAnError(int status, char* message) {
-    if (status != 0) {
-        printf("%s\n", message);
-        exit(status);
-    }
-}
-
-void selection_sort(int* vetor, int size) {  
+void selectionSort(int* vetor, int size) {  
   int i, hasBeenOrganized, min, swap;
 
   while(1) {
@@ -42,6 +35,26 @@ void selection_sort(int* vetor, int size) {
   }
 }
 
+void* sort(void *arg) {
+    int* numbers = (int*)arg;
+    // Tentando pegar o vetor numbers para receber a quantidade de entidades do vetor
+    // selectionSort(numbers, amount);
+}
+
+void populateMatrix(int amount_files, int matrix_result[], int numbers[]) {
+    int j;
+    for (j = 0; j < amount_files; j++) {
+        matrix_result[j] = numbers[j];
+    }
+}
+
+void thereAnError(int status, char* message) {
+    if (status != 0) {
+        printf("%s\n", message);
+        exit(status);
+    }
+}
+
 int main(int argc, char *argv[]) {
     pthread_t* thread_id;
     void* thread_response;
@@ -57,6 +70,8 @@ int main(int argc, char *argv[]) {
     int number_files = 0;
     int numbers[1000][1000];
     int matrix_result[1000][1000];
+    int amount_files[1000];
+    int current_thread;
 
     int n_loop = 100000;
 
@@ -96,9 +111,13 @@ int main(int argc, char *argv[]) {
                 max_n_in_line = j;
             }
 
+            amount_files[i] = j;
+
             fclose(file);
         }
     }
+
+    thread_id = malloc(n_threads * sizeof(pthread_t));
 
     for (i = 0; i < number_files; i++) {
         for(j = 0; j < max_n_in_line; j++) {
@@ -107,31 +126,20 @@ int main(int argc, char *argv[]) {
     }
 
     // Ordena numbers
+    current_thread = 0;
     for (i = 0; i < number_files; i++) {
-        selection_sort(numbers[i], (sizeof(numbers[i])/sizeof(int)));
+        thread_status = pthread_create((thread_id + i), NULL, sort, (void*)(&numbers[i]));
     }
 
+    // Adiciona os num na matrix
+    current_thread = 0;
     if (number_files > 0) {
         for (i = 0; i < number_files; i++) {
-            file = fopen(in_path[i], "rt");
-
-            if (file == NULL) {
-                printf("Problemas na leitura do arquivo\n");
-                exit(1);
-            }
-
-            j = 0;
-            while (!feof(file)) {
-                if (fgets(line, 1000, file)) {
-                    matrix_result[i][j] = numbers[i][j];
-                }
-
-                j++;
-            }
-
-            fclose(file);
+            populateMatrix(amount_files[i], matrix_result[i], numbers[i]);
         }
     }
+
+    free(thread_id);
 
     char buffer [50];
     file = fopen(out_path, "w+");
@@ -145,30 +153,28 @@ int main(int argc, char *argv[]) {
     fclose(file);
 
 
-    exit(1);
+    // exit(1);
 
-    thread_id = malloc(n_threads * sizeof(pthread_t));
+    
 
-    // Aloca os threads
-    for(i = 0; i < n_threads; i++) {
-        thread_status = pthread_create((thread_id + i), NULL, read_file, (void*)(&n_loop));
+    // // Aloca os threads
+    // for(i = 0; i < n_threads; i++) {
+    //     thread_status = pthread_create((thread_id + i), NULL, read_file, (void*)(&n_loop));
 
-        thereAnError(thread_status, "Error create!");
-    }
+    //     thereAnError(thread_status, "Error create!");
+    // }
 
-    // Executa e espera a resposta dos threads
-    for(i = 0; i < n_threads; i++) {
-        thread_status = pthread_join(*(thread_id + i), &thread_response);
+    // // Executa e espera a resposta dos threads
+    // for(i = 0; i < n_threads; i++) {
+    //     thread_status = pthread_join(*(thread_id + i), &thread_response);
 
-        thereAnError(thread_status, "Error join!");
+    //     thereAnError(thread_status, "Error join!");
 
-        response = (char *)thread_response;
+    //     response = (char *)thread_response;
 
-        printf("%d) %s\n", i+1, response);
+    //     printf("%d) %s\n", i+1, response);
 
-    }
-
-    free(thread_id);
+    // }
 
     return 0;
 }
