@@ -27,7 +27,7 @@ struct Arg_populate_matrix {
 }Arg_populate_matrix;
 
 void selectionSort(int* array, int size) {  
-  int i, hasBeenOrganized = 0, min, swap;
+  int i, hasBeenOrganized = 0, min, swap, k = 0;
 
   while(hasBeenOrganized == 0) {
     hasBeenOrganized = 1;
@@ -67,6 +67,17 @@ void thereAnError(int status, char* message) {
         printf("%s\n", message);
         exit(status);
     }
+}
+
+void join_threads(int* current_thread, pthread_t* thread_id) {
+  for (int j = 0; j < *current_thread; j++) {
+      void* thread_response;
+
+      int thread_status = pthread_join(*(thread_id + j), &thread_response);
+
+      thereAnError(thread_status, "Error join!");
+  }
+  *current_thread = 0;
 }
 
 int main(int argc, char *argv[]) {
@@ -151,19 +162,11 @@ int main(int argc, char *argv[]) {
         thereAnError(thread_status, "Error create!");
 
         if (current_thread >= n_threads) {
-            for (j=0; j < current_thread; j++) {
-                thread_status = pthread_join(*(thread_id + j), &thread_response);
-                thereAnError(thread_status, "Error join!");
-            }
-            current_thread = 0;
+            join_threads(&current_thread, thread_id);
         }
     }
     if (current_thread > 0) {
-        for (j=0; j < current_thread; j++) {
-            thread_status = pthread_join(*(thread_id + j), &thread_response);
-            thereAnError(thread_status, "Error join!");
-        }
-        current_thread = 0;
+        join_threads(&current_thread, thread_id);
     }
 
     // Adiciona os num na matrix
@@ -178,20 +181,12 @@ int main(int argc, char *argv[]) {
             thereAnError(thread_status, "Error create!");
 
             if (current_thread >= n_threads) {
-                for (j=0; j < current_thread; j++) {
-                    thread_status = pthread_join(*(thread_id + j), &thread_response);
-                    thereAnError(thread_status, "Error join!");
-                }
-                current_thread = 0;
+                join_threads(&current_thread, thread_id);
             }
         }
 
         if (current_thread > 0) {
-            for (j=0; j < current_thread; j++) {
-                thread_status = pthread_join(*(thread_id + j), &thread_response);
-                thereAnError(thread_status, "Error join!");
-            }
-            current_thread = 0;
+            join_threads(&current_thread, thread_id);
         }
     }
 
