@@ -14,38 +14,51 @@
 //     pthread_exit("Loop finalizado!");
 // }
 
-void selectionSort(int* vetor, int size) {  
-  int i, hasBeenOrganized, min, swap;
+struct Arg_sort {
+    int* array;
+    int size;
+}Arg_sort;
 
-  while(1) {
+struct Arg_populate_matrix {
+    int amount_files;
+    int* matrix_result;
+    int* numbers;
+}Arg_populate_matrix;
+
+void selectionSort(int* array, int size) {  
+  int i, hasBeenOrganized = 0, min, swap;
+
+  while(hasBeenOrganized == 0) {
     hasBeenOrganized = 1;
     for (i = 1; i < size; i++) { 
-        if (vetor[i - 1] > vetor[i]) {
-            swap = vetor[i];
-            vetor[i] = vetor[i - 1];
-            vetor[i - 1] = swap;
+        if (array[i - 1] > array[i]) {
+            swap = array[i];
+            array[i] = array[i - 1];
+            array[i - 1] = swap;
 
             hasBeenOrganized = 0;
         }
     }
-
-    if (hasBeenOrganized == 1) {
-        break;
-    }
   }
 }
 
-void* sort(void *arg) {
-    int* numbers = (int*)arg;
-    // Tentando pegar o vetor numbers para receber a quantidade de entidades do vetor
-    // selectionSort(numbers, amount);
+void* sort(void* arg) {
+    struct Arg_sort* args = (struct Arg_sort*)arg;
+
+    selectionSort(args->array, args->size);
+
+    pthread_exit("Sort finalizado!");
 }
 
-void populateMatrix(int amount_files, int matrix_result[], int numbers[]) {
+void* populateMatrix(void* arg) {
+    struct Arg_populate_matrix* args = (struct Arg_populate_matrix*)arg;
+    
     int j;
-    for (j = 0; j < amount_files; j++) {
-        matrix_result[j] = numbers[j];
+    for (j = 0; j < args->amount_files; j++) {
+        args->matrix_result[j] = args->numbers[j];
     }
+
+    pthread_exit("Construção da matrix finalizado!");
 }
 
 void thereAnError(int status, char* message) {
@@ -71,7 +84,7 @@ int main(int argc, char *argv[]) {
     int numbers[1000][1000];
     int matrix_result[1000][1000];
     int amount_files[1000];
-    int current_thread;
+    int current_thread = 0;
 
     int n_loop = 100000;
 
@@ -117,7 +130,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    thread_id = malloc(n_threads * sizeof(pthread_t));
+    thread_id = malloc(100 * sizeof(pthread_t));
 
     for (i = 0; i < number_files; i++) {
         for(j = 0; j < max_n_in_line; j++) {
@@ -126,18 +139,58 @@ int main(int argc, char *argv[]) {
     }
 
     // Ordena numbers
-    current_thread = 0;
     for (i = 0; i < number_files; i++) {
-        thread_status = pthread_create((thread_id + i), NULL, sort, (void*)(&numbers[i]));
+        struct Arg_sort* args = malloc(sizeof(Arg_sort));
+        args->array = numbers[i];
+        args->size = sizeof(numbers[i]) / sizeof(int);
+
+        thread_status = pthread_create((thread_id + current_thread++), NULL, sort, (void*)(args));
+        thereAnError(thread_status, "Error create!");
+
+        if (current_thread >= n_threads) {
+            for (j=0; j < current_thread; j++) {
+                thread_status = pthread_join(*(thread_id + j), &thread_response);
+                thereAnError(thread_status, "Error join!");
+            }
+            current_thread = 0;
+        }
+    }
+    if (current_thread > 0) {
+        for (j=0; j < current_thread; j++) {
+            thread_status = pthread_join(*(thread_id + j), &thread_response);
+            thereAnError(thread_status, "Error join!");
+        }
+        current_thread = 0;
     }
 
     // Adiciona os num na matrix
-    current_thread = 0;
     if (number_files > 0) {
         for (i = 0; i < number_files; i++) {
-            populateMatrix(amount_files[i], matrix_result[i], numbers[i]);
+            struct Arg_populate_matrix* args = malloc(sizeof(Arg_populate_matrix));
+            args->amount_files = amount_files[i];
+            args->matrix_result = matrix_result[i];
+            args->numbers = numbers[i];
+
+            thread_status = pthread_create((thread_id + current_thread++), NULL, populateMatrix, (void*)(args));
+            thereAnError(thread_status, "Error create!");
+
+            if (current_thread >= n_threads) {
+                for (j=0; j < current_thread; j++) {
+                    thread_status = pthread_join(*(thread_id + j), &thread_response);
+                    thereAnError(thread_status, "Error join!");
+                }
+                current_thread = 0;
+            }
         }
-    }
+
+        if (current_thread > 0) {
+            for (j=0; j < current_thread; j++) {
+                thread_status = pthread_join(*(thread_id + j), &thread_response);
+                thereAnError(thread_status, "Error join!");
+            }
+            current_thread = 0;
+        }
+    }[]
 
     free(thread_id);
 
