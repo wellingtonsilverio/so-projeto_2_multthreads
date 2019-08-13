@@ -4,17 +4,6 @@
 #include <string.h>
 #include <time.h>
 
-// void* read_file(void *arg) {
-//     int i;
-//     int* loop_count = (int*)arg;
-
-//     for (i = 0; i <= *loop_count; i++) {
-//         printf("%d\n", i);
-//     }
-
-//     pthread_exit("Loop finalizado!");
-// }
-
 struct Arg_sort {
     int* array;
     int size;
@@ -143,7 +132,8 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    thread_id = malloc(100 * sizeof(pthread_t));
+    thread_id = malloc(n_threads * sizeof(pthread_t));
+
     start_time = (float)clock()/CLOCKS_PER_SEC;
 
     for (i = 0; i < number_files; i++) {
@@ -191,11 +181,14 @@ int main(int argc, char *argv[]) {
     }
 
     end_time = (float)clock()/CLOCKS_PER_SEC;
+    
+    printf("Time: %f\n", end_time - start_time);
+
     free(thread_id);
-    printf("\nTime: %f\n", end_time - start_time);
 
     char buffer [50];
     file = fopen(out_path, "w+");
+    
     for (i = 0; i < number_files; i++) {
         for(j = 0; j < max_n_in_line; j++) {
             sprintf (buffer, "%d ", matrix_result[i][j]);
@@ -203,31 +196,8 @@ int main(int argc, char *argv[]) {
         }
         fputs("\n", file);
     }
+
     fclose(file);
-
-
-    // exit(1);
-
-    
-
-    // // Aloca os threads
-    // for(i = 0; i < n_threads; i++) {
-    //     thread_status = pthread_create((thread_id + i), NULL, read_file, (void*)(&n_loop));
-
-    //     thereAnError(thread_status, "Error create!");
-    // }
-
-    // // Executa e espera a resposta dos threads
-    // for(i = 0; i < n_threads; i++) {
-    //     thread_status = pthread_join(*(thread_id + i), &thread_response);
-
-    //     thereAnError(thread_status, "Error join!");
-
-    //     response = (char *)thread_response;
-
-    //     printf("%d) %s\n", i+1, response);
-
-    // }
 
     return 0;
 }
