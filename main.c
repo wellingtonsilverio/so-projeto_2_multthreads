@@ -190,7 +190,7 @@ int main(int argc, char *argv[]) {
             }
             current_thread = 0;
         }
-    }[]
+    }
 
     free(thread_id);
 
