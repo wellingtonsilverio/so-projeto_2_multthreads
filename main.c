@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <string.h>
+#include <time.h>
 
 // void* read_file(void *arg) {
 //     int i;
@@ -85,6 +86,7 @@ int main(int argc, char *argv[]) {
     int matrix_result[1000][1000];
     int amount_files[1000];
     int current_thread = 0;
+    float start_time, end_time;
 
     int n_loop = 100000;
 
@@ -131,6 +133,7 @@ int main(int argc, char *argv[]) {
     }
 
     thread_id = malloc(100 * sizeof(pthread_t));
+    start_time = (float)clock()/CLOCKS_PER_SEC;
 
     for (i = 0; i < number_files; i++) {
         for(j = 0; j < max_n_in_line; j++) {
@@ -192,7 +195,9 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    end_time = (float)clock()/CLOCKS_PER_SEC;
     free(thread_id);
+    printf("\nTime: %f\n", end_time - start_time);
 
     char buffer [50];
     file = fopen(out_path, "w+");
