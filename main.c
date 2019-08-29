@@ -69,12 +69,22 @@ void selectionSort(int* array, int size) {
     }
   }
 }
+traffic threads;
 
 void* sort(void* arg) {
     Arg_sort* args = (Arg_sort*)arg;
-    int i, j;
+
+    up(&threads);
 
     selectionSort(args->array, args->size);
+
+    for (int i = 0; i < 100000; i++) {
+        for (int j = 0; j < 10000; j++) {
+
+        }
+    }
+
+    down(&threads);
 
     pthread_exit("Sort finalizado!");
 }
@@ -82,10 +92,13 @@ void* sort(void* arg) {
 void* populateMatrix(void* arg) {
     Arg_populate_matrix* args = (Arg_populate_matrix*)arg;
 
-    int j;
-    for (j = 0; j < args->amount_files; j++) {
+    up(&threads);
+
+    for (int j = 0; j < args->amount_files; j++) {
         args->matrix_result[j] = args->numbers[j];
     }
+
+    down(&threads);
 
     pthread_exit("Construção da matrix finalizado!");
 }
@@ -126,8 +139,6 @@ int main(int argc, char *argv[]) {
     int amount_files[1000];
     int current_thread = 0;
     struct timeval start_time, end_time;
-    traffic threads;
-    threads.spaces = 1;
 
 
     int n_loop = 100000;
@@ -193,18 +204,18 @@ int main(int argc, char *argv[]) {
         args->array = numbers[i];
         args->size = sizeof(numbers[i]) / sizeof(int);
 
-        thread_status = pthread_create((thread_id + current_thread++), NULL, sort, (void*)(args));
+        thread_status = pthread_create((thread_id), NULL, sort, (void*)(args));
         thereAnError(thread_status, "Error create!");
 
+        // void* thread_response;
 
-        if (current_thread >= n_threads) {
-            join_threads(&current_thread, thread_id);
-        }
+        // int thread_status = pthread_join(*(thread_id), &thread_response);
+
+        // thereAnError(thread_status, "Error join!");
 
     }
-    if (current_thread > 0) {
-        join_threads(&current_thread, thread_id);
-    }
+
+    pthread_join(*(thread_id), &thread_response);
 
     // Adiciona os num na matrix
     if (number_files > 0) {
@@ -214,17 +225,11 @@ int main(int argc, char *argv[]) {
             args->matrix_result = matrix_result[i];
             args->numbers = numbers[i];
 
-            thread_status = pthread_create((thread_id + current_thread++), NULL, populateMatrix, (void*)(args));
+            thread_status = pthread_create((thread_id), NULL, populateMatrix, (void*)(args));
             thereAnError(thread_status, "Error create!");
-
-            if (current_thread >= n_threads) {
-                join_threads(&current_thread, thread_id);
-            }
         }
 
-        if (current_thread > 0) {
-            join_threads(&current_thread, thread_id);
-        }
+        pthread_join(*(thread_id), &thread_response);
     }
 
     gettimeofday(&end_time, NULL);
