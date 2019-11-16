@@ -231,7 +231,7 @@ int main(int argc, char *argv[]) {
 
     gettimeofday(&end_time, NULL);
 
-    printf("Time: %lld ms\n", (long long)((end_time.tv_sec*1000LL + end_time.tv_usec/1000) - (start_time.tv_sec*1000LL + start_time.tv_usec/1000)));
+    printf("Time: %lld ms\nThreads: %d\n", (long long)((end_time.tv_sec*1000LL + end_time.tv_usec/1000) - (start_time.tv_sec*1000LL + start_time.tv_usec/1000)), n_threads);
 
     free(thread_id);
 
