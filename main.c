@@ -110,9 +110,7 @@ void join_threads(int* current_thread, pthread_t* thread_id) {
 
 int main(int argc, char *argv[]) {
     pthread_t* thread_id;
-    void* thread_response;
     int thread_status;
-    char* response;
     char line[1000];
     int i;
     int j;
@@ -174,8 +172,12 @@ int main(int argc, char *argv[]) {
             amount_files[i] = j;
 
             fclose(file);
+
+            in_path[i] = NULL;
         }
     }
+
+    free(*in_path);
 
     thread_id = malloc(n_threads * sizeof(pthread_t));
 
@@ -235,6 +237,8 @@ int main(int argc, char *argv[]) {
 
     char buffer [50];
     file = fopen(out_path, "w+");
+    
+    out_path = NULL;
 
     for (i = 0; i < number_files; i++) {
         for(j = 0; j < max_n_in_line; j++) {
