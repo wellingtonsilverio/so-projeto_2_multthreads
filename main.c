@@ -1,62 +1,95 @@
-#include <stdio.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <pthread.h>
-#include <time.h>
+#include <string.h>
+#include <sys/time.h>
 
-typedef struct ARRAY{
-    int *matriz;
-    int tamanho;
-}array;
+typedef struct {
+    int* array;
+    int size;
+} Arg_sort;
 
-typedef struct POPULAR{
-	int maxNum;
-    int* matriz_cortada;
-    array* arr;
-} popular;
+typedef struct {
+    int amount_files;
+    int* matrix_result;
+    int* numbers;
+} Arg_populate_matrix;
 
-//Calcula o tempo final
-double calculaTempo(struct timespec tIni, struct timespec tFim)
-{
-  return ((double)tFim.tv_sec + 1.0e-9 * tFim.tv_nsec) -
-         ((double)tIni.tv_sec + 1.0e-9 * tIni.tv_nsec);
+typedef struct {
+  pthread_mutex_t lock;
+  pthread_cond_t wait;
+  int spaces;
+} traffic;
+
+void up(traffic *s) {
+  pthread_mutex_lock(&(s->lock));
+  s->spaces--;
+
+  if (s->spaces < 0) {
+    printf("Não existem vagas disponiveis, aguarde...\n");
+    pthread_cond_wait(&(s->wait), &(s->lock));
+    printf("Vaga liberada!\n");
+  }
+
+  printf("Um carro esta passando, %d vagas disponiveis.\n", s->spaces);
+
+  pthread_mutex_unlock(&(s->lock));
+  return;
 }
 
-//Fun��o utilizada no qsort
-int cmpFunc (const void *x, const void *y)
-{
-    int p = *(int*)x;
-    int q = *(int*)y;
-    return (p - q);
+// Função para liberar as vagas e mandar o sinal
+// quando foi liberada uma vaga bloqueada
+void down(traffic *s) {
+  pthread_mutex_lock(&(s->lock));
+
+  s->spaces++;
+
+  if (s->spaces <= 0) {
+    pthread_cond_signal(&(s->wait));
+  }
+
+  printf("Uma vaga liberada. %d vagas disponiveis.\n", s->spaces);
+  pthread_mutex_unlock(&(s->lock));
+  return;
 }
 
-//Fun��o que utiliza thread para ordenar a um vetor
+void selectionSort(int* array, int size) {
+  int i, hasBeenOrganized = 0, min, swap, k = 0;
+
+  while(hasBeenOrganized == 0) {
+    hasBeenOrganized = 1;
+    for (i = 1; i < size; i++) {
+        if (array[i - 1] > array[i]) {
+            swap = array[i];
+            array[i] = array[i - 1];
+            array[i - 1] = swap;
+
+            hasBeenOrganized = 0;
+        }
+    }
+  }
+}
+
 void* sort(void* arg) {
-    array* arr = (array*)arg;
+    Arg_sort* args = (Arg_sort*)arg;
+    int i, j;
 
-    qsort(arr->matriz, arr->tamanho, sizeof(int), cmpFunc);
+    selectionSort(args->array, args->size);
 
     pthread_exit("Sort finalizado!");
-    return NULL;
 }
 
-//Fun��o que utiliza thread para popular a matriz final
-void* popularMatrix(void* arg) {
-    popular* pop = (popular*)arg;
+void* populateMatrix(void* arg) {
+    Arg_populate_matrix* args = (Arg_populate_matrix*)arg;
 
-	int i;
-    for (i = 0; i < pop->arr->tamanho; i++)
-			pop->matriz_cortada[i] = pop->arr->matriz[i];
+    int j;
+    for (j = 0; j < args->amount_files; j++) {
+        args->matrix_result[j] = args->numbers[j];
+    }
 
-	for (; i < pop->maxNum; i++)
-		pop->matriz_cortada[i] = 0;
-
-    pthread_exit("Constru��o da matrix finalizado!");
-    return NULL;
+    pthread_exit("Construção da matrix finalizado!");
 }
 
-//Fun��o que mostra uma mensagem de erro
-//Arg1 - numero do erro ao sair
-//Arg2 - Menssagem a ser mostrada antes de sair
 void thereAnError(int status, char* message) {
     if (status != 0) {
         printf("%s\n", message);
@@ -64,154 +97,158 @@ void thereAnError(int status, char* message) {
     }
 }
 
-//Fun��o com a utilidade de realizar um pthread_join para todas as threads
-//Arg1 - Quantidade de threads a serem resetadas e reseta seu valor ao final
-//Arg2 - Vetor de threds a serem dados join
-void join_Threads(int* thread_atual, pthread_t* thread_id) {
-  for (int j = 0; j < *thread_atual; j++) {
-      int thread_status = pthread_join(*(thread_id + j), NULL);
+void join_threads(int* current_thread, pthread_t* thread_id) {
+  for (int j = 0; j < *current_thread; j++) {
+      void* thread_response;
+
+      int thread_status = pthread_join(*(thread_id + j), &thread_response);
+
       thereAnError(thread_status, "Error join!");
   }
-  *thread_atual = 0;
+  *current_thread = 0;
 }
 
-//Fun��o que le os arquivos de entrada
-// Arg1 - arquivo file j� aberto
-// Arg2 - array que ser� salvo as informa��es
-void LerArquivo(FILE *file, array *arr)
-{
-	int contador = 0, temp;
-    while (!feof (file))
-    {
-        fscanf (file, "%d", &temp);
-        contador++;
-    }
-
-    arr->matriz = (int*) calloc(contador, sizeof(int));
-    arr->tamanho = contador;
-
-    rewin(file);
-    for(int i = 0; i < arr->tamanho; i++)
-        fscanf (file, "%d", &arr->matriz[i]);
-}
-
-//Salva a matriz no arquivo de sa�da
-// Arg1 - arquivo file j� aberto
-// Arg2 - numero de linhas da matriz
-// Arg3 - numero de colunas de matriz
-// Arg4 - matriz a ser usada para escrever
-void SalvaMatriz_File (FILE *file, int row, int col, int matriz[row][col])
-{
-    if (file == NULL)
-        thereAnError(1, "Erro ao criar arquivo");
-
-    for (int i = 0; i < row; i++)
-    {
-        for (int e = 0; e < col; e++)
-        {
-            fprintf(file, "%-5d", matriz[i][e]);
-        }
-        fprintf(file, "\n");
-    }
-}
-
-int main(int argc, char *argv[])
-{
-	//Declaracao das variaveis
-    int i;
-
-    FILE* file;
+int main(int argc, char *argv[]) {
     pthread_t* thread_id;
     int thread_status;
-    int thread_atual = 0;
+    char line[1000];
+    int i;
+    int j;
+    int max_n_in_line = 0;
+    int n_threads = 1;
+    char* in_path[1000] = {"arq1.dat", "arq2.dat", "arq3.dat"};
+    char* out_path = "saida.dat";
+    int number_files = 0;
+    int numbers[1000][1000];
+    int matrix_result[1000][1000];
+    int amount_files[1000];
+    int current_thread = 0;
+    struct timeval start_time, end_time;
+    traffic threads;
+    threads.spaces = 1;
 
-    int numThreads;
-    int numFiles;
-    int maxNum_inFiles = 0;
 
-    struct timespec tInicio={0,0}, tFinal={0,0};
+    int n_loop = 100000;
 
-	//Adiquirindo o numero de threads e arquivos de entrada
-    numThreads = atoi(argv[1]);
-	numFiles = argc-4;
+    FILE* file;
 
-	//Nome da saida
-    char *outFile = argv[argc-1];
-
-	//Nomes das entradas
-    char *inFiles[numFiles];
-    for(i = 0; i < numFiles; i++)
-        inFiles[i] = argv[i+2];
-
-	//Variavel para salvar os valores das entradas
-	array dats[numFiles];
-
-	//Le todas as entradas enquanto, acha a que tem a maior quantidade de inteiros
-	for (i = 0; i < numFiles; i++)
-	{
-		file = fopen(inFiles[i], "r");
-		if(file != NULL){
-			LerArquivo(file, &dats[i]);
-			fclose(file);
-			if (dats[i].tamanho > maxNum_inFiles)
-				maxNum_inFiles = dats[i].tamanho;
-		}
-		else
-			thereAnError(-1,"Ler Arquivo");
-	}
-
-	// Inicializa a matriz final
-	int matrix_resultado[numFiles][maxNum_inFiles];
-
-	//Tempo inicial das threads
-    clock_gettime(CLOCK_MONOTONIC, &tInicio);
-
-    //alloca threads
-    thread_id = malloc(numThreads * sizeof(pthread_t));
-
-    // Realiza um qsort nas arrays obtidas anteriormente atraves de threads
-    for (i = 0; i < numFiles; i++)
-	  {
-        thread_status = pthread_create((thread_id + thread_atual++), NULL, sort, (void*)&dats[i]);
-        thereAnError(thread_status, "Error create!");
-
-        if (thread_atual >= numThreads)
-            join_Threads(&thread_atual, thread_id);
+    if (argc >= 1) {
+            n_threads = atoi(argv[1]);
+            threads.spaces = n_threads;
     }
-    if (thread_atual > 0)
-        join_Threads(&thread_atual, thread_id);
 
-    // Popula a matriz resultado com threads
-    if (numFiles > 0) {
-        for (i = 0; i < numFiles; i++) {
-            popular *pop = malloc(sizeof(popular));
-            pop->maxNum = maxNum_inFiles;
-            pop->matriz_cortada = matrix_resultado[i];
-            pop->arr = &dats[i];
-
-            thread_status = pthread_create((thread_id + thread_atual), NULL, popularMatrix, (void*)(pop));
-            thread_atual++;
-            thereAnError(thread_status, "Error create!");
-
-            if (thread_atual >= numThreads){
-                join_Threads(&thread_atual, thread_id);
-            }
+    for (i = 2; i < argc; ++i) {
+        if (strcmp(argv[i],"-o") == 0) {
+            out_path = argv[i+1];
+            break;
+        } else {
+            in_path[i - 2] = argv[i]; // Tem que arrumar isso aqui, esta fixado em 1000 arquivos
+            number_files++;
         }
     }
-	if (thread_atual > 0) {
-		join_Threads(&thread_atual, thread_id);
-	}
 
-	//Tempo final das threads
-    clock_gettime(CLOCK_MONOTONIC, &tFinal);
+    if (number_files > 0) {
+        for (i = 0; i < number_files; i++) {
+            file = fopen(in_path[i], "rt");
 
-    //Chama a fun��o que ir� escrever a sa�da
-    file = fopen(outFile, "w");
-    SalvaMatriz_File(file, numFiles, maxNum_inFiles, matrix_resultado);
+            if (file == NULL) {
+                printf("Problemas na leitura do arquivo\n");
+                exit(1);
+            }
+
+            j = 0;
+            while (!feof(file)) {
+                if (fgets(line, 1000, file)) {
+                    numbers[i][j] = atoi(line);
+                }
+
+                j++;
+            }
+
+            if (max_n_in_line < j) {
+                max_n_in_line = j;
+            }
+
+            amount_files[i] = j;
+
+            fclose(file);
+
+            in_path[i] = NULL;
+        }
+    }
+
+    free(*in_path);
+
+    thread_id = malloc(n_threads * sizeof(pthread_t));
+
+    gettimeofday(&start_time, NULL);
+
+    for (i = 0; i < number_files; i++) {
+        for(j = 0; j < max_n_in_line; j++) {
+            matrix_result[i][j] = 0;
+        }
+    }
+
+    // Ordena numbers
+    for (i = 0; i < number_files; i++) {
+        Arg_sort* args = malloc(sizeof(Arg_sort));
+        args->array = numbers[i];
+        args->size = sizeof(numbers[i]) / sizeof(int);
+
+        thread_status = pthread_create((thread_id + current_thread++), NULL, sort, (void*)(args));
+        thereAnError(thread_status, "Error create!");
+
+
+        if (current_thread >= n_threads) {
+            join_threads(&current_thread, thread_id);
+        }
+
+    }
+    if (current_thread > 0) {
+        join_threads(&current_thread, thread_id);
+    }
+
+    // Adiciona os num na matrix
+    if (number_files > 0) {
+        for (i = 0; i < number_files; i++) {
+            Arg_populate_matrix* args = malloc(sizeof(Arg_populate_matrix));
+            args->amount_files = amount_files[i];
+            args->matrix_result = matrix_result[i];
+            args->numbers = numbers[i];
+
+            thread_status = pthread_create((thread_id + current_thread++), NULL, populateMatrix, (void*)(args));
+            thereAnError(thread_status, "Error create!");
+
+            if (current_thread >= n_threads) {
+                join_threads(&current_thread, thread_id);
+            }
+        }
+
+        if (current_thread > 0) {
+            join_threads(&current_thread, thread_id);
+        }
+    }
+
+    gettimeofday(&end_time, NULL);
+
+    printf("Time: %lld ms\nThreads: %d\n", (long long)((end_time.tv_sec*1000LL + end_time.tv_usec/1000) - (start_time.tv_sec*1000LL + start_time.tv_usec/1000)), n_threads);
+
+    free(thread_id);
+
+    char buffer [50];
+    file = fopen(out_path, "w+");
+    
+    out_path = NULL;
+
+    for (i = 0; i < number_files; i++) {
+        for(j = 0; j < max_n_in_line; j++) {
+            sprintf (buffer, "%d ", matrix_result[i][j]);
+            fputs(buffer, file);
+        }
+        fputs("\n", file);
+    }
+
     fclose(file);
-
-    //Printa o tempo da aplica��o
-    printf("Tempo com thread %d: %lf ms\n", numThreads, calculaTempo(tInicio, tFinal));
 
     return 0;
 }
