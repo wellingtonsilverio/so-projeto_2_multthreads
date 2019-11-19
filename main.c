@@ -90,7 +90,7 @@ void LerArquivo(FILE *file, array *arr)
     arr->matriz = (int*) calloc(contador, sizeof(int));
     arr->tamanho = contador;
 
-    rewin(file);
+    rewind(file);
     for(int i = 0; i < arr->tamanho; i++)
         fscanf (file, "%d", &arr->matriz[i]);
 }
