@@ -192,7 +192,7 @@ int main(int argc, char *argv[])
 
     thread_id = malloc(n_threads * sizeof(pthread_t));
 
-    gettimeofday(&start_time, NULL);
+    gettimeofday(&start_time, NULL); // Pega o tempo inicial
 
     // Ordena numbers
     for (i = 0; i < number_files; i++)
@@ -239,7 +239,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    gettimeofday(&end_time, NULL);
+    gettimeofday(&end_time, NULL); // Pega o tempo final
 
     printf("N de Threads: %d\nTempo: %lld ms\n", n_threads, (long long)((end_time.tv_sec * 1000LL + end_time.tv_usec / 1000) - (start_time.tv_sec * 1000LL + start_time.tv_usec / 1000))); // 1000LL é 1000 Long Long
 
@@ -248,6 +248,7 @@ int main(int argc, char *argv[])
     char buffer[50];
     file = fopen(out_path, "w+");
 
+    // Escreve no arquivo de saida
     for (i = 0; i < number_files; i++)
     {
         for (j = 0; j < max_n_in_line; j++)
